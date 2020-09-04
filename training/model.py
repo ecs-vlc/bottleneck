@@ -37,6 +37,11 @@ class RetinalBottleneckModel(nn.Module):
     :param n_inch: Number of input channels
     :param n_out: Number of classifier outputs
     :param init: if true apply Xavier initialisation to linear and conv layers and zero biases
+
+    Limitations: the ventral model rewriting code needs the first layer of the model to be in either 
+    ventral._modules[0][1] or ventral._modules[0][1]._modules[0][1] in the case of a nn.Sequential wrapper. 
+    The first layer must be an nn.Conv2d for the rewriting to work. Similar limitations apply to the final layer,
+    which needs to be last in the _module dict (or last in the last _module dict entry if there is an nn.Sequential wrapper).
     """
     def __init__(self, n_bn, ventral, n_inch=1, n_out=10, init=True):
         super(RetinalBottleneckModel, self).__init__()
