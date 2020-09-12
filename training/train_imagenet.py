@@ -35,8 +35,8 @@ rep = params['a']
 # n_bn = bns[args.arr % 6]
 # rep = args.arr // 6
 
-model_file = f'./models/imagenet/resnet50_{n_bn}_{rep}.pt'
-log_file = f'./logs/imagenet/resnet50_{n_bn}_{rep}.csv'
+model_file = f'/scratch/ewah1g13/models/resnet50_{n_bn}_{rep}'
+# log_file = f'./logs/imagenet/resnet50_{n_bn}_{rep}.csv'
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
@@ -83,9 +83,10 @@ optimizer = torch.optim.SGD(model.parameters(), 0.1, momentum=0.9, weight_decay=
 loss_function = nn.CrossEntropyLoss()
 
 # device = "cuda:0" if torch.cuda.is_available() else "cpu"
-trial = Trial(model, optimizer, loss_function, metrics=['loss', 'acc', 'top_5_acc'], callbacks=[callbacks.MultiStepLR([30, 60]), callbacks.CSVLogger(log_file)]).to('cuda')
+trial = Trial(model, optimizer, loss_function, metrics=['loss', 'acc', 'top_5_acc'],
+              callbacks=[callbacks.TensorBoard(write_graph=False, comment=f'resnet50_{n_bn}_{rep}'), callbacks.MultiStepLR([30, 60]), callbacks.MostRecent(model_file + '_{epoch:02d}.pt')]).to('cuda')
 trial.with_generators(trainloader, test_generator=testloader)
 trial.run(epochs=90)
 trial.evaluate()
 
-torch.save(model.module.state_dict(), model_file)
+torch.save(model.module.state_dict(), model_file + '.pt')
