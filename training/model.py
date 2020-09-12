@@ -63,7 +63,7 @@ class RetinalBottleneckModel(nn.Module):
             raise TypeError("ventral argument must be an integer, string or nn.Module")
 
         if init:
-            self.apply(init_weights)
+            self.retina.apply(init_weights)
 
     def __build_default_ventral(self, last_size, n_out, d_vvs):
         self.ventral = nn.Sequential()
@@ -131,11 +131,12 @@ class RetinalBottleneckModel(nn.Module):
 
     
     def forward(self, x):
-        for name, module in self.retina:
-            x = module(x)
-        for name, module in self.ventral:
-            x = module(x)
-        return x
+        x = self.retina(x)
+        # for name, module in self.retina:
+        #     x = module(x)
+        # for name, module in self.ventral:
+        #     x = module(x)
+        return self.ventral(x)
 
 
 if __name__ == '__main__':
