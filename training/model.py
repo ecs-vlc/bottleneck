@@ -43,13 +43,13 @@ class RetinalBottleneckModel(nn.Module):
     The first layer must be an nn.Conv2d for the rewriting to work. Similar limitations apply to the final layer,
     which needs to be last in the _module dict (or last in the last _module dict entry if there is an nn.Sequential wrapper).
     """
-    def __init__(self, n_bn, ventral, n_inch=1, n_out=10, init=True):
+    def __init__(self, n_bn, ventral, n_inch=1, n_out=10, init=True, retina_kernel_size=9):
         super(RetinalBottleneckModel, self).__init__()
 
         self.retina = nn.Sequential()
-        self.retina.add_module("retina_conv1", nn.Conv2d(n_inch, 32, (9, 9), padding=4))
+        self.retina.add_module("retina_conv1", nn.Conv2d(n_inch, 32, (retina_kernel_size, retina_kernel_size), padding=retina_kernel_size // 2))
         self.retina.add_module("retina_relu1", nn.ReLU())
-        self.retina.add_module("retina_conv2", nn.Conv2d(32, n_bn, (9, 9), padding=4))
+        self.retina.add_module("retina_conv2", nn.Conv2d(32, n_bn, (retina_kernel_size, retina_kernel_size), padding=retina_kernel_size // 2))
         self.retina.add_module("retina_relu2", nn.ReLU())
         
         if isinstance(ventral, int):
