@@ -4,6 +4,7 @@ import eagerpy as ep
 from foolbox import PyTorchModel, accuracy, samples
 import foolbox.attacks as fa
 import numpy as np
+import json
 
 from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
@@ -82,7 +83,10 @@ for vdepth in ventraldepths:
                     idx = idx + len(labels)
                 print("")
             for i, attack in enumerate(attacks):
-                results[vdepth][bn][run][str(attack)] = 1.0 - attack_success[i].mean(axis=-1)
+                results[vdepth][bn][run][str(attack)] = (1.0 - attack_success[i].mean(axis=-1)).tolist()
 
             robust_accuracy = 1.0 - attack_success.max(axis=0).mean(axis=-1)
-            results[vdepth][bn][run]['robust_accuracy'] = robust_accuracy
+            results[vdepth][bn][run]['robust_accuracy'] = robust_accuracy.tolist()
+
+            with open('adv-results-cifar-linf.json', 'w') as fp:
+                json.dump(results, fp)
