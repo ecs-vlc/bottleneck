@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
-from .imagenet_hdf5 import ImageNetHDF5
+from imagenet_hdf5 import ImageNetHDF5
 # from torchvision.datasets import ImageNet
 from model import RetinalBottleneckModel
 
