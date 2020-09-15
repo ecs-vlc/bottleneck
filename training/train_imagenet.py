@@ -1,4 +1,5 @@
 import torchvision.transforms as transforms
+import torchbearer
 from torchbearer import Trial, callbacks
 import torch
 import torch.nn as nn
@@ -96,6 +97,6 @@ for filepath in os.listdir(dir):
         trial.load_state_dict(torch.load(dir + filepath))
 
 trial.run(epochs=90)
-trial.evaluate()
+trial.evaluate(data_key=torchbearer.TEST_DATA)
 
 torch.save(model.module.state_dict(), dir + model_file + '.pt')
