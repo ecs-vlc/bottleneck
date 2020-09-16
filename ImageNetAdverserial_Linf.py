@@ -17,6 +17,8 @@ from sklearn.model_selection import ParameterGrid
 
 import argparse
 
+from tqdm import tqdm
+
 parser = argparse.ArgumentParser(description='Imagenet Training')
 parser.add_argument('--arr', default=0, type=int, help='point in job array')
 # parser.add_argument('--d-vvs', default=2, type=int, help='ventral depth')
@@ -28,14 +30,25 @@ bottlenecks = [1, 2, 4, 8, 16, 32]
 
 n_trials = 5
 
+attacks = [
+    fa.FGSM(),
+    fa.LinfPGD(),
+    fa.LinfBasicIterativeAttack(),
+    fa.LinfAdditiveUniformNoiseAttack(),
+    fa.LinfDeepFoolAttack(),
+]
+
 param_grid = ParameterGrid({
     'n_bn': bottlenecks,
-    'a': list(range(n_trials))
+    'a': list(range(n_trials)),
+    'method': list(range(len(attacks)))
 })
 
 params = param_grid[args.arr]
 n_bn = params['n_bn']
 rep = params['a']
+attack_index = params['method']
+attack = attacks[attack_index]
 
 # n_bn = bns[args.arr % 6]
 # rep = args.arr // 6
@@ -90,14 +103,6 @@ testloader = DataLoader(testset, batch_size=1024, shuffle=False,  pin_memory=Tru
 # runs = range(0,10)
 # ventraldepths = [0,1,2,3,4]
 
-attacks = [
-    fa.FGSM(),
-    fa.LinfPGD(),
-    fa.LinfBasicIterativeAttack(),
-    fa.LinfAdditiveUniformNoiseAttack(),
-    fa.LinfDeepFoolAttack(),
-]
-
 epsilons = [
     0.0,
     0.0005,
@@ -138,24 +143,23 @@ fmodel = PyTorchModel(model, bounds=(0, 1))
 # results[vdepth][bn][run]["accuracy"] = accuracy(fmodel, images, labels)
 
 attack_success = np.zeros((len(attacks), len(epsilons), len(testset)), dtype=np.bool)
-for i, attack in enumerate(attacks):
-    print(attack)
-    idx=0
-    for images, labels in testloader:
-        print('.', end='')
-        images = images.to(fmodel.device)
-        labels = labels.to(fmodel.device)
+# for i, attack in enumerate(attacks):
+print(attack)
+idx = 0
+for images, labels in tqdm(testloader):
+    images = images.to(fmodel.device)
+    labels = labels.to(fmodel.device)
 
-        _, _, success = attack(fmodel, images, labels, epsilons=epsilons)
-        success_ = success.cpu().numpy()
-        attack_success[i][:,idx:idx+len(labels)] = success_
-        idx = idx + len(labels)
-    print("")
-for i, attack in enumerate(attacks):
-    results[n_bn][rep][str(attack)] = (1.0 - attack_success[i].mean(axis=-1)).tolist()
+    _, _, success = attack(fmodel, images, labels, epsilons=epsilons)
+    success_ = success.cpu().numpy()
+    attack_success[attack_index][:, idx:idx+len(labels)] = success_
+    idx = idx + len(labels)
+# print("")
+# for i, attack in enumerate(attacks):
+results[n_bn][rep][str(attack)] = (1.0 - attack_success[attack_index].mean(axis=-1)).tolist()
 
 robust_accuracy = 1.0 - attack_success.max(axis=0).mean(axis=-1)
 results[n_bn][rep]['robust_accuracy'] = robust_accuracy.tolist()
 
-with open(f'results-imagenet-linf-{n_bn}-{rep}.json', 'w') as fp:
+with open(f'results-imagenet-linf-{n_bn}-{rep}-{attack_index}.json', 'w') as fp:
     json.dump(results, fp)
