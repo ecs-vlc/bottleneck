@@ -89,7 +89,7 @@ test_transform = transforms.Compose([
 ])
 
 testset = ImageNetHDF5(f'{args.root}/val', transform=test_transform, cache_size=1000)
-testloader = DataLoader(testset, batch_size=1024, shuffle=False,  pin_memory=True, num_workers=32)
+testloader = DataLoader(testset, batch_size=256, shuffle=False,  pin_memory=True, num_workers=16)
 
 # test_transform = transforms.Compose([
 #     transforms.ToTensor()  # convert to tensor
