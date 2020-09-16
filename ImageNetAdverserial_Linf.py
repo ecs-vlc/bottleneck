@@ -47,7 +47,7 @@ model_file = f'resnet50_{n_bn}_{rep}'
 def normalize_with(mean, std):
     mean = torch.tensor(mean)
     std = torch.tensor(std)
-    return lambda x: (x - mean.unsqueeze(0).unsqueeze(2).unsqueeze(3)) / std.unsqueeze(0).unsqueeze(2).unsqueeze(3)
+    return lambda x: (x - mean.to(x.device).unsqueeze(0).unsqueeze(2).unsqueeze(3)) / std.to(x.device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 
 
 normalize = normalize_with(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
