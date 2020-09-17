@@ -68,7 +68,7 @@ class ImageNetHDF5Subset(ImageNetHDF5):
             if dest_count[dest] == num_examples:
                 pass
 
-            new_dest = new_dest.append((dest, i))
+            new_dest.append((dest, i))
             dest_count[dest] += 1
         self.dest = new_dest
 
