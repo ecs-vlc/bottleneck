@@ -90,7 +90,7 @@ test_transform = transforms.Compose([
 ])
 
 if args.subset:
-    testset = ImageNetHDF5Subset(f'{args.root}/val', 100, transform=test_transform, cache_size=1000)
+    testset = ImageNetHDF5Subset(f'{args.root}/val', 10, transform=test_transform, cache_size=1000)
 else:
     testset = ImageNetHDF5(f'{args.root}/val', transform=test_transform, cache_size=1000)
 testloader = DataLoader(testset, batch_size=250, shuffle=False,  pin_memory=True, num_workers=4)
