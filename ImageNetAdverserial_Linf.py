@@ -10,7 +10,7 @@ from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from training.imagenet_hdf5 import ImageNetHDF5
+from training.imagenet_hdf5 import ImageNetHDF5, ImageNetHDF5Subset
 from training.model import RetinalBottleneckModel
 
 from sklearn.model_selection import ParameterGrid
@@ -24,6 +24,7 @@ parser.add_argument('--arr', default=0, type=int, help='point in job array')
 # parser.add_argument('--d-vvs', default=2, type=int, help='ventral depth')
 # parser.add_argument('--cache', default=250, type=int, help='cache size')
 parser.add_argument('--root', type=str, help='root')
+parser.add_argument('--subset', type=bool, default=False)
 args = parser.parse_args()
 
 bottlenecks = [1, 2, 4, 8, 16, 32]
@@ -88,8 +89,11 @@ test_transform = transforms.Compose([
     # transforms.ToTensor()  # convert to tensor
 ])
 
-testset = ImageNetHDF5(f'{args.root}/val', transform=test_transform, cache_size=1000)
-testloader = DataLoader(testset, batch_size=256, shuffle=False,  pin_memory=True, num_workers=16)
+if args.subset:
+    testset = ImageNetHDF5Subset(f'{args.root}/val', 100, transform=test_transform, cache_size=1000)
+else:
+    testset = ImageNetHDF5(f'{args.root}/val', transform=test_transform, cache_size=1000)
+testloader = DataLoader(testset, batch_size=250, shuffle=False,  pin_memory=True, num_workers=4)
 
 # test_transform = transforms.Compose([
 #     transforms.ToTensor()  # convert to tensor

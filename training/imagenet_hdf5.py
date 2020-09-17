@@ -11,6 +11,8 @@ class ImageNetHDF5(VisionDataset):
     def __init__(self, root, cache_size=125, transform=None):
         super(ImageNetHDF5, self).__init__(root, transform=transform, target_transform=None)
 
+        # self.first_n = first_n
+
         self.dest = pickle.load(open(os.path.join(root, 'dest.p'), 'rb'))
         self.cache = {}
         self.cache_size = cache_size
@@ -51,3 +53,22 @@ class ImageNetHDF5(VisionDataset):
 
     def __len__(self):
         return len(self.dest)
+
+
+class ImageNetHDF5Subset(ImageNetHDF5):
+    def __init__(self, root, num_examples, cache_size=125, transform=None):
+        super().__init__(root, cache_size, transform)
+
+        new_dest = []
+        dest_count = {}
+        for dest, i in self.dest:
+            if dest not in dest_count:
+                dest_count[dest] = 0
+
+            if dest_count[dest] == num_examples:
+                pass
+
+            new_dest = new_dest.append((dest, i))
+            dest_count[dest] += 1
+        self.dest = new_dest
+
