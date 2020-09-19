@@ -123,22 +123,49 @@ class RetinalBottleneckModel(nn.Module):
         self.ventral = mdl
 
     def has_layer(self, layer_name):
-        for name, module in self.retina:
-            if layer_name == name:
-                return True
-        for name, module in self.ventral:
-            if layer_name == name:
-                return True
-        return False
+        return True
+        # for name, module in self.retina:
+        #     if layer_name == name:
+        #         return True
+        # for name, module in self.ventral:
+        #     if layer_name == name:
+        #         return True
+        # return False
 
     def forward(self, x):
-        x = self.transform(x)
+        if self.transform is not None:
+            x = self.transform(x)
         x = self.retina(x)
         # for name, module in self.retina:
         #     x = module(x)
         # for name, module in self.ventral:
         #     x = module(x)
         return self.ventral(x)
+
+    def forward_to_layer(self, x, layer_name):
+        if self.transform is not None:
+            x = self.transform(x)
+
+        loc, index = layer_name.split('_')
+        index = int(index)
+
+        if loc == 'retina':
+            for i, module in enumerate(self.retina):
+                x = module(x)
+                if i == index:
+                    return x
+        else:
+            x = self.retina(x)
+
+        if loc == 'ventral':
+            for i, module in enumerate(list(self.ventral._modules.items())):
+                _, module = module
+                x = module(x)
+                if i == index:
+                    return x
+        else:
+            x = self.ventral(x)
+        return x
 
 
 if __name__ == '__main__':
