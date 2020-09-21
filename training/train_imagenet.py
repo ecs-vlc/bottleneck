@@ -1,16 +1,19 @@
 import torchvision.transforms as transforms
+import torchbearer
 from torchbearer import Trial, callbacks
 import torch
 import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
-from .imagenet_hdf5 import ImageNetHDF5
+from imagenet_hdf5 import ImageNetHDF5
 # from torchvision.datasets import ImageNet
-from .model import RetinalBottleneckModel
+from model import RetinalBottleneckModel
 
 from sklearn.model_selection import ParameterGrid
 
 import argparse
+import os
+import re
 
 parser = argparse.ArgumentParser(description='Imagenet Training')
 parser.add_argument('--arr', default=0, type=int, help='point in job array')
@@ -35,7 +38,8 @@ rep = params['a']
 # n_bn = bns[args.arr % 6]
 # rep = args.arr // 6
 
-model_file = f'/scratch/ewah1g13/models/resnet50_{n_bn}_{rep}'
+dir = '/scratch/ewah1g13/models/'
+model_file = f'resnet50_{n_bn}_{rep}'
 # log_file = f'./logs/imagenet/resnet50_{n_bn}_{rep}.csv'
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -84,9 +88,15 @@ loss_function = nn.CrossEntropyLoss()
 
 # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 trial = Trial(model, optimizer, loss_function, metrics=['loss', 'acc', 'top_5_acc'],
-              callbacks=[callbacks.TensorBoard(write_graph=False, comment=f'resnet50_{n_bn}_{rep}'), callbacks.MultiStepLR([30, 60]), callbacks.MostRecent(model_file + '_{epoch:02d}.pt')]).to('cuda')
+              callbacks=[callbacks.TensorBoard(write_graph=False, comment=f'resnet50_{n_bn}_{rep}'), callbacks.MultiStepLR([30, 60]), callbacks.MostRecent(dir + model_file + '_{epoch:02d}.pt')]).to('cuda')
 trial.with_generators(trainloader, test_generator=testloader)
-trial.run(epochs=90)
-trial.evaluate()
 
-torch.save(model.module.state_dict(), model_file + '.pt')
+pattern = re.compile(model_file + '_\d+.pt')
+for filepath in os.listdir(dir):
+    if pattern.match(filepath):
+        trial.load_state_dict(torch.load(dir + filepath))
+
+trial.run(epochs=90)
+trial.evaluate(data_key=torchbearer.TEST_DATA)
+
+torch.save(model.module.state_dict(), dir + model_file + '.pt')

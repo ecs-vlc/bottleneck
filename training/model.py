@@ -43,8 +43,10 @@ class RetinalBottleneckModel(nn.Module):
     The first layer must be an nn.Conv2d for the rewriting to work. Similar limitations apply to the final layer,
     which needs to be last in the _module dict (or last in the last _module dict entry if there is an nn.Sequential wrapper).
     """
-    def __init__(self, n_bn, ventral, n_inch=1, n_out=10, init=True, retina_kernel_size=9):
+    def __init__(self, n_bn, ventral, n_inch=1, n_out=10, init=True, retina_kernel_size=9, transform=None):
         super(RetinalBottleneckModel, self).__init__()
+
+        self.transform = transform
 
         self.retina = nn.Sequential()
         self.retina.add_module("retina_conv1", nn.Conv2d(n_inch, 32, (retina_kernel_size, retina_kernel_size), padding=retina_kernel_size // 2))
@@ -121,22 +123,49 @@ class RetinalBottleneckModel(nn.Module):
         self.ventral = mdl
 
     def has_layer(self, layer_name):
-        for name, module in self.retina:
-            if layer_name == name:
-                return True
-        for name, module in self.ventral:
-            if layer_name == name:
-                return True
-        return False
+        return True
+        # for name, module in self.retina:
+        #     if layer_name == name:
+        #         return True
+        # for name, module in self.ventral:
+        #     if layer_name == name:
+        #         return True
+        # return False
 
-    
     def forward(self, x):
+        if self.transform is not None:
+            x = self.transform(x)
         x = self.retina(x)
         # for name, module in self.retina:
         #     x = module(x)
         # for name, module in self.ventral:
         #     x = module(x)
         return self.ventral(x)
+
+    def forward_to_layer(self, x, layer_name):
+        if self.transform is not None:
+            x = self.transform(x)
+
+        loc, index = layer_name.split('_')
+        index = int(index)
+
+        if loc == 'retina':
+            for i, module in enumerate(self.retina):
+                x = module(x)
+                if i == index:
+                    return x
+        else:
+            x = self.retina(x)
+
+        if loc == 'ventral':
+            for i, module in enumerate(list(self.ventral._modules.items())):
+                _, module = module
+                x = module(x)
+                if i == index:
+                    return x
+        else:
+            x = self.ventral(x)
+        return x
 
 
 if __name__ == '__main__':
