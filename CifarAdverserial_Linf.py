@@ -10,6 +10,8 @@ from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
+torch.hub.set_dir('/data/torchhub/')
+
 test_transform = transforms.Compose([
     transforms.ToTensor()  # convert to tensor
 ])
