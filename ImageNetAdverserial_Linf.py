@@ -124,14 +124,14 @@ epsilons = [
     1.0,
 ]
 
-results = dict()
-
-# for vdepth in ventraldepths:
-#     results[vdepth] = dict()
-#     for bn in bottlenecks:
-#         results[vdepth][bn] = dict()
-results[n_bn] = dict()
-results[n_bn][rep] = dict()
+# results = dict()
+#
+# # for vdepth in ventraldepths:
+# #     results[vdepth] = dict()
+# #     for bn in bottlenecks:
+# #         results[vdepth][bn] = dict()
+# results[n_bn] = dict()
+# results[n_bn][rep] = dict()
 
 model = RetinalBottleneckModel(n_bn, 'resnet50', n_out=1000, n_inch=3, retina_kernel_size=7, transform=normalize)
 model.load_state_dict(torch.load(dir + model_file + '.pt'))
@@ -146,7 +146,7 @@ fmodel = PyTorchModel(model, bounds=(0, 1))
 
 # results[vdepth][bn][run]["accuracy"] = accuracy(fmodel, images, labels)
 
-attack_success = np.zeros((len(attacks), len(epsilons), len(testset)), dtype=np.bool)
+attack_success = np.zeros((len(epsilons), len(testset)), dtype=np.bool)
 # for i, attack in enumerate(attacks):
 print(attack)
 idx = 0
@@ -156,14 +156,19 @@ for images, labels in tqdm(testloader):
 
     _, _, success = attack(fmodel, images, labels, epsilons=epsilons)
     success_ = success.cpu().numpy()
-    attack_success[attack_index][:, idx:idx+len(labels)] = success_
+    attack_success[:, idx:idx+len(labels)] = success_
     idx = idx + len(labels)
 # print("")
 # for i, attack in enumerate(attacks):
-results[n_bn][rep][str(attack)] = (1.0 - attack_success[attack_index].mean(axis=-1)).tolist()
+import pickle
+with open(f'results-imagenet-linf-{n_bn}-{rep}-{attack_index}.p', 'wb') as f:
+    # Pickle the 'data' dictionary using the highest protocol available.
+    pickle.dump(attack_success, f)
 
-robust_accuracy = 1.0 - attack_success.max(axis=0).mean(axis=-1)
-results[n_bn][rep]['robust_accuracy'] = robust_accuracy.tolist()
-
-with open(f'results-imagenet-linf-{n_bn}-{rep}-{attack_index}.json', 'w') as fp:
-    json.dump(results, fp)
+# results[n_bn][rep][str(attack)] = (1.0 - attack_success[attack_index].mean(axis=-1)).tolist()
+#
+# robust_accuracy = 1.0 - attack_success.max(axis=0).mean(axis=-1)
+# results[n_bn][rep]['robust_accuracy'] = robust_accuracy.tolist()
+#
+# with open(f'results-imagenet-linf-{n_bn}-{rep}-{attack_index}.json', 'w') as fp:
+#     json.dump(results, fp)
