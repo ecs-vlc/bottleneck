@@ -20,26 +20,37 @@ parser.add_argument('--arr', default=0, type=int, help='point in job array')
 # parser.add_argument('--d-vvs', default=2, type=int, help='ventral depth')
 # parser.add_argument('--cache', default=250, type=int, help='cache size')
 parser.add_argument('--root', type=str, help='root')
+parser.add_argument('--baseline', type=bool, help='train baseline?')
 args = parser.parse_args()
 
 bottlenecks = [1, 2, 4, 8, 16, 32]
 
 n_trials = 5
 
-param_grid = ParameterGrid({
-    'n_bn': bottlenecks,
-    'a': list(range(n_trials))
-})
+if args.baseline:
+    retina_ch = 64
+    n_bn = 64
+    rep = args.arr
 
-params = param_grid[args.arr]
-n_bn = params['n_bn']
-rep = params['a']
+    model_file = f'resnet50_baseline_{rep}'
+else:
+    retina_ch = 32
+    param_grid = ParameterGrid({
+        'n_bn': bottlenecks,
+        'a': list(range(n_trials))
+    })
+
+    params = param_grid[args.arr]
+    n_bn = params['n_bn']
+    rep = params['a']
+
+    model_file = f'resnet50_{n_bn}_{rep}'
 
 # n_bn = bns[args.arr % 6]
 # rep = args.arr // 6
 
 dir = '/scratch/ewah1g13/models/'
-model_file = f'resnet50_{n_bn}_{rep}'
+
 # log_file = f'./logs/imagenet/resnet50_{n_bn}_{rep}.csv'
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -73,11 +84,11 @@ trainset = ImageNetHDF5(f'{args.root}/train', transform=train_transform, cache_s
 testset = ImageNetHDF5(f'{args.root}/val', transform=test_transform, cache_size=1000)
 
 # create data loaders
-trainloader = DataLoader(trainset, batch_size=1024, shuffle=True, pin_memory=True, num_workers=16)
-testloader = DataLoader(testset, batch_size=1024, shuffle=False,  pin_memory=True, num_workers=16)
+trainloader = DataLoader(trainset, batch_size=1024, shuffle=True, pin_memory=True, num_workers=64)
+testloader = DataLoader(testset, batch_size=1024, shuffle=False,  pin_memory=True, num_workers=64)
 
 # model = ImageNetModel(n_bn, args.d_vvs, n_inch=3)
-model = RetinalBottleneckModel(n_bn, 'resnet50', n_out=1000, n_inch=3, retina_kernel_size=7)
+model = RetinalBottleneckModel(n_bn, 'resnet50', n_out=1000, n_inch=3, retina_kernel_size=7, retina_ch=retina_ch)
 model = nn.DataParallel(model)
 # print(model)
 
